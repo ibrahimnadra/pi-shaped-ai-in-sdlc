@@ -3,12 +3,11 @@
 ## Overview
 This n8n workflow automatically finds weekly YouTube videos on a topic of interest, extracts the transcript, converts it to formatted HTML, and emails it to you.
 
-**Note on Implementation**: I initially tried building a full AI agent with multiple tools and memory nodes, but was not able to run atleast once, there persists an issue and it hit limitations with free-tier API quotas. Still I have added the workflow file in the Failed Workflow Folder. In the failed workflow, the agent was using the tools and memory to curate the better responses. 
+**Note on Implementation**: I initially tried building a full AI agent with multiple tools and memory nodes, but was not able to run atleast once, there always persist an issue. Still I have added the workflow file in the Failed Workflow Folder. In the failed workflow, the agent was using the tools and memory to curate the better responses. 
 ![Failed Workflow](screenshots/failed_workflow.png)
 
-**Issue**: 
+**Issue**:  The failed workflow was hitting the Google Gemini free-tier quota limit (429 "Too Many Requests" error with a limit of 5 free requests). The complex agent setup with multiple tool calls and the Window Buffer Memory node was consuming my quota too quickly. **Hence, I had to remove the tools and memory and moved from a complex agent-driven architecture to a simpler linear pipeline.**
 ![Failed Workflow Issue](screenshots/failed_workflow_issue.png)
-
 
 ## Use Case
 
