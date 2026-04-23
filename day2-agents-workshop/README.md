@@ -3,7 +3,12 @@
 ## Overview
 This n8n workflow automatically finds weekly YouTube videos on a topic of interest, extracts the transcript, converts it to formatted HTML, and emails it to you.
 
-**Note on Implementation**: I initially tried building a full AI agent with multiple tools and memory nodes, but hit limitations with free-tier API quotas. This workflow is a simpler, working alternative that runs reliably on free versions.
+**Note on Implementation**: I initially tried building a full AI agent with multiple tools and memory nodes, but was not able to run atleast once, there persists an issue and it hit limitations with free-tier API quotas. Still I have added the workflow file in the Failed Workflow Folder. In the failed workflow, the agent was using the tools and memory to curate the better responses. 
+![Failed Workflow](screenshots/failed_workflow.png)
+
+**Issue**: 
+![Failed Workflow Issue](screenshots/failed_workflow_issue.png)
+
 
 ## Use Case
 
