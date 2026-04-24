@@ -58,7 +58,7 @@ The agent operates through a **conversational interface** via webhook. Users sen
 ```json
 {
   "sessionId": "user123",
-  "message": "Find me top AI videos this week"
+  "topic": "Artificial Intelligence"
 }
 ```
 
@@ -158,21 +158,54 @@ The core agent node with system prompt that orchestrates tool usage and memory i
 
 ![AI Agent Configuration](screenshots/ai_agent.png)
 
+### Prompt
+```
+You are an intelligent YouTube Research & Blog Writing Agent.
+
+Today's date: {{ $now.format('MMMM D, YYYY') }}
+
+Your job:
+1. Use the `search_youtube_videos` tool to find top videos on the given topic.
+
+2. Filter for videos longer than 15 minutes and with high view counts (prefer
+   >100k views). Pick the best 1-3 candidates.
+
+3. Use the `get_video_transcript` tool on each selected video. If a transcript
+   is not found for a video, skip it and try the next candidate. If no
+   transcripts are found at all, inform the user, the root cause and ask for a different topic.
+
+4. Convert the transcript into a clean HTML blog post with this structure:
+   - Catchy title in <h1>
+   - Short intro of 2-3 sentences in <p>
+   - 3-5 sections with <h2> subheadings based on the video content
+   - Key takeaways as <ul><li> bullet list
+   - Conclusion in <p>
+   - No markdown. Wrap everything in a <div style="font-family: Arial,
+     sans-serif; line-height: 1.6; max-width: 680px; margin: auto;">
+     for clean email rendering.
+
+5. Return only the finished HTML blog post as your final output.
+   Do not include any explanation or extra text outside the HTML.
+
+6. Remember what topics the user has already explored in this session and
+   never repeat them. If the user asks for the same topic again, inform them
+   it was already covered and suggest a related topic instead.
+```
+
 ### Webhook-Triggered Execution
 The workflow being invoked via webhook with a topic request, triggering the agent to start processing.
 
 ![Webhook Triggered](screenshots/webhook_triggered.png)
-
-### Email Delivery
-The generated HTML blog post being sent via Gmail to the recipient.
-
-![Email Delivery](screenshots/email_delivery.png)
 
 ### Send Email Node
 Details of the email node configuration showing HTML content delivery and recipient setup.
 
 ![Send Email Configuration](screenshots/send_email.png)
 
+### Email Delivery
+The generated HTML blog post being sent via Gmail to the recipient.
+
+![Email Delivery](screenshots/email_delivery.png)
 ---
 
 ## Reflection
