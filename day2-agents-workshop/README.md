@@ -1,31 +1,40 @@
-# Weekly Topic Update Agent
+# Blog Generation from Trending YouTube Videos - AI Agent Workflow
 
 ## Overview
-This n8n workflow automatically finds weekly YouTube videos on a topic of interest, extracts the transcript, converts it to formatted HTML, and emails it to you.
+This n8n workflow implements an **intelligent AI-powered agent** that finds trending YouTube videos on a given topic, extracts transcripts, converts them into engaging HTML blog posts, and delivers them via email. The workflow is driven by a conversational AI agent with memory and tool integration, triggered via webhook.
 
-**Note on Implementation**: I initially tried building a full AI agent with multiple tools and memory nodes, but was not able to run atleast once, there always persist an issue. Still I have added the workflow file in the Failed Workflow Folder. In the failed workflow, the agent was using the tools and memory to curate the better responses. 
-![Failed Workflow](screenshots/failed_workflow.png)
-
-**Issue**:  The failed workflow was hitting the Google Gemini free-tier quota limit (429 "Too Many Requests" error with a limit of 5 free requests). The complex agent setup with multiple tool calls and the Window Buffer Memory node was consuming my quota too quickly. **Hence, I had to remove the tools and memory and moved from a complex agent-driven architecture to a simpler linear pipeline.**
-![Failed Workflow Issue](screenshots/failed_workflow_issue.png)
+**Architecture Update**: The workflow now uses a **full agent-driven architecture** with LLM-powered reasoning, persistent session memory, and multi-step tool orchestration. This replaces the previous linear pipeline approach, enabling more intelligent decision-making and context awareness.
 
 ## Use Case
 
 ### Problem 
-It's hard to keep up with new content on topics you care about. This workflow finds the best educational videos weekly and delivers them as readable summaries.
+It's hard to keep up with new content on topics you care about. This workflow intelligently searches for and curates the best educational videos, converting them into readable blog summaries on-demand.
 
 ### Primary User
-- Anyone trying to stay updated on a specific topic
-- Students who want curated learning materials
-- People with limited time for research
+- Anyone wanting on-demand curated video summaries
+- Students who want AI-powered learning material generation
+- Content researchers needing quick video-to-blog conversions
+- People with limited time for video research
 
-### Example Inputs
-The agent runs autonomously on a weekly schedule. Users configure it once with their topic of interest:
-1. Topic: "Artificial Intelligence" - Gets the best AI video each week
-2. Topic: "Python Programming" - Delivers the top Python tutorial weekly
-3. Topic: "Machine Learning" - Curates ML research and tutorials
-4. Topic: "Cloud Computing" - Sends AWS/Azure/GCP updates every Thursday
-5. Topic: "Data Science" - Delivers data science insights on schedule
+### How It Works
+The agent operates through a **conversational interface** via webhook. Users send a request with their topic of interest, and the AI agent:
+1. **Reasons about the topic** and decides which videos to search for
+2. **Remembers previous searches** in the session to avoid repetition
+3. **Intelligently filters** videos by duration (>15 min) and popularity (>100k views)
+4. **Adapts dynamically** if transcripts are unavailable, trying alternative videos
+5. **Generates professional HTML** blog posts from video transcripts
+
+### Example Scenarios
+- Send: `{ "sessionId": "user123", "topic": "Artificial Intelligence" }`  
+  Response: HTML blog post on latest AI trends
+  
+- Send: `{ "sessionId": "user123", "topic": "Python Programming" }`  
+  Response: HTML tutorial blog from top Python video
+  
+- Send: `{ "sessionId": "user123", "topic": "Machine Learning" }`  
+  Response: ML research blog if available, or suggests related topic
+  
+- **Session Memory**: If the same user asks for "Artificial Intelligence" again in the same session, the agent recognizes it and suggests a related topic instead
 
 ---
 
@@ -42,79 +51,161 @@ The agent runs autonomously on a weekly schedule. Users configure it once with t
 
 ---
 
-## Workflow Nodes
+## Workflow Architecture
 
-**Schedule Trigger** - Runs the workflow every Thursday at 6:17 PM
+### Entry Point
+**Webhook Trigger** - Receives POST requests with JSON body:
+```json
+{
+  "sessionId": "user123",
+  "message": "Find me top AI videos this week"
+}
+```
 
-**Set Node** - Sets the topic to search for (e.g., "AI")
+### Agent & Memory System
+**Conversational AI Agent** - The core orchestrator powered by Google Gemini 3.1 Flash Lite:
+- Receives topic from webhook
+- Uses the system prompt to reason about which tools to invoke and in what order
+- Maintains context across multiple tool calls
+- Makes intelligent decisions about video selection and transcript retrieval
 
-**HTTP Request (YouTube Search)** - Finds YouTube videos about the topic
+**Window Buffer Memory** - Stores the last 20 conversation turns per session:
+- Records all topics searched by a user
+- Prevents duplicate topic searches within a session
+- Enables the agent to suggest alternative topics if a user repeats a search
+- Improves user experience through context awareness
 
-**HTTP Request (Video Details)** - Gets video duration and view counts
+### Agent Tools (Autonomous Tool Usage)
+The AI agent has access to three specialized tools:
 
-**JavaScript Code** - Filters videos longer than 15 minutes and sorts by popularity
+1. **Search YouTube Videos Tool**
+   - Queries YouTube API for videos on the given topic
+   - Filters for results with high view counts
+   - Returns video IDs, titles, channels, and metadata
+   - Agent decides which videos to investigate further
 
-**HTTP Request (Transcript)** - Extracts the video transcript
+2. **Get Video Transcript Tool**
+   - Fetches full transcripts from selected videos
+   - Handles videos without available transcripts gracefully
+   - Agent tries alternative videos if transcript unavailable
+   - Returns clean text ready for blog generation
 
-**AI Agent + Google Gemini** - Converts transcript to clean HTML format
+3. **Google Gemini Chat Model**
+   - Converts video transcripts into professional HTML blog posts
+   - Applies consistent formatting with proper structure
+   - Adds catchy titles, sections, and key takeaways
+   - Ensures clean HTML suitable for email delivery
 
-**Gmail** - Sends the HTML blog via email
+### Output Delivery
+**Gmail Node** - Sends the generated HTML blog post via email
+
+**Webhook Response** - Returns completion status to the caller
 
 ---
 
-## Memory Used
+## Setup & Configuration
 
-This workflow doesn't use a traditional memory node. Instead, data flows through each step in sequence. The transcript and video info are passed forward until the final email is sent. 
+### Required API Keys
+1. **Google YouTube API Key** - Set as `YOUTUBE_API_KEY` environment variable
+2. **YouTube Transcript API** - Hosted endpoint with authorization key set as `TRANSCRIPT_API_KEY`
+3. **Google Gemini API Key** - For the LLM model (configured in n8n credentials)
+4. **Gmail OAuth2** - For email delivery
 
-I tried using a Window Buffer Memory node but ran into free-tier limitations, so this linear pipeline works better.
+
+### Making Requests
+Send a POST request to your n8n webhook:
+```
+POST /webhook/youtube-blog-agent
+Content-Type: application/json
+
+{
+  "sessionId": "user123",
+  "topic": "Artificial Intelligence"
+}
+```
+
+The agent will:
+1. Search for relevant videos
+2. Check transcripts availability
+3. Generate an HTML blog post
+4. Email the result
+5. Return a success response
 
 ---
 
-## Workflow Screenshot
+## How the Agent Reasons
 
-![Complete Workflow](screenshots/workflow.png)
+The AI agent uses its system prompt to autonomously decide:
+- **Which videos to prioritize** based on view counts and duration
+- **Whether to retry** if a transcript isn't available
+- **How to structure** the HTML blog post for readability
+- **When to inform the user** of issues (e.g., no transcripts found)
+- **How to remember** previous searches to avoid duplication
+
+This agentic approach enables the workflow to **handle edge cases intelligently** rather than relying on hardcoded logic.
 
 ---
 
-## Agent in Action
+## Workflow Visualization
 
-### Screenshot 1: Scheduled Execution Triggered
+### Complete Workflow Architecture
+The full n8n workflow showing all nodes connected: webhook trigger → AI Agent → tools → Gmail delivery.
 
-![Scheduled Execution Triggered](screenshots/schedule_trigger.png)
+![Complete Workflow](screenshots/complete_workflow.png)
 
-### Screenshot 2: Video Selection and Filtering
+### AI Agent Node Configuration
+The core agent node with system prompt that orchestrates tool usage and memory integration.
 
-![Video Selection and Filtering](screenshots/filtered_video_flow.png)
+![AI Agent Configuration](screenshots/ai_agent.png)
 
-### Screenshot 3: Transcript Conversion to HTML
+### Webhook-Triggered Execution
+The workflow being invoked via webhook with a topic request, triggering the agent to start processing.
 
-![Transcript Conversion to HTML](screenshots/transcript_to_html.png)
+![Webhook Triggered](screenshots/webhook_triggered.png)
 
-### Screenshot 4: Email Delivery
+### Email Delivery
+The generated HTML blog post being sent via Gmail to the recipient.
 
 ![Email Delivery](screenshots/email_delivery.png)
+
+### Send Email Node
+Details of the email node configuration showing HTML content delivery and recipient setup.
+
+![Send Email Configuration](screenshots/send_email.png)
 
 ---
 
 ## Reflection
 
-### What Does Your Agent Do Well?
-- Finds relevant videos reliably each week
-- Video filtering logic (duration + view count) actually works
-- Transcript extraction is usually accurate
-- HTML formatting is clean and readable
-- Email delivery is consistent
+### Evolution of the Workflow
 
-### What Are Its Current Limitations?
-- Single topic only - need separate workflows for different interests
-- Topic and schedule are hardcoded in the workflow
-- Sometimes videos don't have usable transcripts
-- YouTube API rate limits can cause issues
-- Google API keys and secrets could expire soon
+**Initial Approach (Failed)**: Attempted a full agent-driven architecture but hit Google Gemini free-tier quota limits (429 errors with max 5 free requests).
 
-### What Would You Improve or Extend?
-- Most Importantly. I should get the reliable access to LLM, so that my agent could use the HTTP request tool, gmail tool and memory. And i will eventually be able to remove the nodes and the agent could cover the whole flow itself. 
-- Add a configuration interface instead of hardcoding values
+**Second Iteration (Linear Pipeline)**: Removed agent reasoning and memory, replaced with fixed logic nodes. This worked but was inflexible and couldn't handle edge cases well.
+
+**Current Implementation (Agent + Tools + Memory)**: Successfully implements the original vision:
+- ✅ Conversational AI agent makes intelligent decisions
+- ✅ Window Buffer Memory tracks session history
+- ✅ Tools (YouTube Search, Transcript Fetch) are autonomously invoked
+- ✅ Graceful handling of missing transcripts
+- ✅ Dynamic topic suggestions to avoid repetition
+- ✅ Professional HTML generation with consistent formatting
+
+### Key Strengths
+- **Intelligent Reasoning** - Agent adapts behavior based on results, not just following fixed steps
+- **Session Awareness** - Remembers user history within a session to prevent redundant searches
+- **Resilient** - Automatically tries alternative videos if transcripts unavailable
+- **Scalable** - Webhook-based triggering allows multiple concurrent requests
+- **Flexible** - Easy to extend with new tools or modify agent behavior via system prompt
+
+### Limitations & Future Improvements
+- **Cost**: Free tier LLM usage requires careful quota management
+- **Rate Limits**: YouTube API and transcript service may throttle requests
+- **Single Tool Call**: Currently optimized for single-step scenarios; complex multi-turn conversations need more refinement
+- **Potential Enhancement**: Add webhook-callable tools (e.g., database lookup) to further extend agent capabilities
+
+### Why This Architecture Matters
+This workflow demonstrates how **AI agents can orchestrate multi-step workflows** without hardcoded logic. The agent uses tools, memory, and reasoning to deliver flexible, intelligent automation - a pattern increasingly important for building adaptive AI systems.
 - Support multiple topics in one workflow
 - Better error handling when transcripts are unavailable
 - Track which emails get read to improve suggestions

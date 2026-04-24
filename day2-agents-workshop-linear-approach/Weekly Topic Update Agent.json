@@ -40,7 +40,7 @@
             },
             {
               "name": "key",
-              "value": "AIzaSyAodUxh59QTG9UQ5twcABwK00etbG2SK-Q"
+              "value": "={{$env.YOUTUBE_API_KEY}}"
             }
           ]
         },
@@ -71,7 +71,7 @@
             },
             {
               "name": "key",
-              "value": "AIzaSyAodUxh59QTG9UQ5twcABwK00etbG2SK-Q"
+              "value": "={{$env.YOUTUBE_API_KEY}}"
             }
           ]
         },
@@ -108,7 +108,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Basic 69ea0b0438c1056396a571af"
+              "value": "={{$env.TRANSCRIPT_API_KEY}}"
             }
           ]
         },
@@ -163,7 +163,7 @@
     },
     {
       "parameters": {
-        "sendTo": "nadra.ibrahim0718@gmail.com",
+        "sendTo": "={{$env.RECIPIENT_EMAIL}}",
         "subject": "=Weekly Blog",
         "message": "={{ $json.output }}",
         "options": {}
